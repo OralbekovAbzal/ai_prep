@@ -7,7 +7,7 @@ def timed(func):
     def calculate_time(*args, **kwargs):
         start = time.perf_counter()
         result = func(*args, **kwargs)
-        print(f"Функиция {func.__name__} работала {time.perf_counter() - start:.2f} c")
+        print(f"Функция {func.__name__} работала {time.perf_counter() - start:.2f} c")
         return result
     return calculate_time
 
