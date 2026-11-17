@@ -7,7 +7,6 @@ async def fetch_one(client: httpx.AsyncClient, sem: asyncio.Semaphore, post_id: 
     async with sem:
         resp = await client.get(URL.format(post_id))
         print(f"Успешно {post_id}")
-        await asyncio.sleep(1)
         return resp.json()
 
 async def main():
