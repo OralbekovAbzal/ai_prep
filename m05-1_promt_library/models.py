@@ -13,3 +13,10 @@ class PromtOut:
     text: str
     model: str
     tags: list
+
+class Job(BaseModel):
+    prompt: str = Field(min_length=5, max_length=2000)
+    progress: int = Field(ge=0, le=100)
+    cost: int = Field(ge=0)
+    model: Literal["fast", "pro"]
+    status: Literal["queued", "running", "done"]

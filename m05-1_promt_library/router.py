@@ -1,12 +1,19 @@
-from fastapi import FastAPI, HTTPException
-from models import PromtIn, PromtOut
+from fastapi import FastAPI, HTTPException, Depends
+from models import PromtIn, PromtOut, Job
+import asyncio
+from job import create_job
+from config import check_key
 
 app = FastAPI()
+background = set()
 
 promts = dict()
 next_id = {"next_id": 1}
 
-@app.post("/promts", status_code=201)
+jobs = dict()
+j_next_id = {"next_id": 1}
+
+@app.post("/promts", dependencies=[Depends(check_key)], status_code=201)
 def add_promt(promt: PromtIn):
     data = promt.model_dump()
     promt_id = next_id["next_id"]
@@ -34,7 +41,7 @@ def get_promt_by_id(p_id: int):
     result = PromtOut(p_id, promt["text"], promt["model"], promt["tags"])
     return result
 
-@app.delete("/promts/{p_id}", status_code=200)
+@app.delete("/promts/{p_id}", dependencies=[Depends(check_key)], status_code=200)
 def delete_promt(p_id: int):
     promt = promts.get(p_id)
     if promt is None:
@@ -42,3 +49,19 @@ def delete_promt(p_id: int):
     result = PromtOut(p_id, promt["text"], promt["model"], promt["tags"])
     del promts[p_id]
     return result
+
+@app.post("/jobs", dependencies=[Depends(check_key)], status_code=202)
+async def create_task(job: Job):
+    data = job.model_dump()
+    jobs[j_next_id["next_id"]] = data
+    j_next_id["next_id"] += 1
+    task = asyncio.create_task(create_job(jobs, j_next_id["next_id"] - 1))
+    background.add(task)
+    return {"job_id": j_next_id["next_id"] - 1}
+
+@app.get("/jobs/{j_id}")
+def get_task_by_id(j_id: int):
+    job = jobs.get(j_id)
+    if job is None:
+        raise HTTPException(404)
+    return job
