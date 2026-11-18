@@ -6,3 +6,5 @@ def execute_query(sql) -> list:
         with conn.cursor() as cur:
             res = cur.execute(sql)
             return res.fetchall()
+
+conn = psycopg.connect(get_db())
