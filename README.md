@@ -1,51 +1,43 @@
-# ai-prep
+<p align="center">
+  <img src="assets/banner.svg?v=2" alt="Abzal Oralbekov — AI Engineer in progress" width="100%">
+</p>
 
-Мой путь к роли AI Engineer: подготовка к курсу nFactorial AI Engineer (старт 14 декабря 2026), а потом и сам курс.
+<p align="center">
+  <a href="https://www.linkedin.com/in/abzal-oralbekov-b538b1334"><img src="https://img.shields.io/badge/LinkedIn-2a3cff?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+  <a href="https://t.me/oralbekkov"><img src="https://img.shields.io/badge/Telegram-2a3cff?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"></a>
+</p>
 
-Здесь лежит практика по моему учебному плану: от основ Python и потоков ввода-вывода до LLM, агентов и RAG. Каждый модуль — короткая теория, 2–4 практические задачи и тест по памяти. В этом репозитории — решения задач.
+### `> PLAYER INFO`
 
-## Как устроен репозиторий
+Software engineering graduate from Astana, Kazakhstan.
+Building backend and LLM projects and getting ready for the nFactorial AI Engineer program (starts Dec 2026).
+Looking for an internship or junior role in AI engineering or Python backend.
 
-- Каждая папка — одна задача или один модуль: `mNN-K_название`, где `NN` — номер модуля, `K` — номер задачи. Если в модуле одна папка на все задачи, номера задачи нет: `mNN_название`.
-- Папки появляются по мере прохождения. Что лежит в репозитории — то сделано.
-- Код задач пишу сам. ИИ (Claude) использую как наставника: объяснения, ревью и подсказки, но не готовые решения.
-- Большие файлы данных не хранятся в репозитории: они генерируются скриптами из той же папки.
+### `> HIGH SCORE` · projects
 
-## План
-
-| № | Модуль | Что внутри | Задачи |
+| Project | What it does | Stack | Status |
 |---|---|---|---|
-| 00 | sys и потоки | stdin, stdout, stderr, пайпы, коды выхода, буферизация | фильтр подозрительных транзакций, быстрый ввод, буфер и код выхода |
-| 01 | Python: база | ссылки и изменяемость, коллекции, срезы, comprehensions, аргументы функций | каталог роликов, две ловушки, подозрительные карты |
-| 02 | ООП и ошибки | классы, dataclass, исключения, logging, venv, .env, type hints | задание на генерацию, кошелёк со своим исключением, шаблон проекта |
-| 03 | Генераторы, декораторы, async | yield, декораторы с параметрами, asyncio, httpx, Semaphore | `@timed` и `@retry`, 20 запросов параллельно, миллион строк без памяти |
-| 04 | Git, тесты, разработка с ИИ | ветки, PR, конфликты, pytest, спецификация до кода | этот репозиторий, конфликт своими руками, спецификация и тесты |
-| 05 | HTTP, REST, FastAPI | коды статуса, Pydantic, Depends, долгие задачи | API библиотеки промптов, задача со статусом, ключ доступа |
-| 06 | SQL и Postgres | JOIN, GROUP BY, индексы, транзакции, psycopg | схема сервиса генерации, списание в транзакции |
-| 07 | Docker и деплой | Dockerfile, compose, volume, healthcheck | докеризация сервиса, деплой по ссылке |
-| 08 | Основы ML | train/val/test, метрики, порог, baseline | baseline против модели, порог и цена ошибки, классификация через LLM |
-| 09 | LLM через API | токены, промпт, structured output, стриминг | первый вызов и лог, раскадровка по брифу, стриминг в API |
-| 10 | Агенты | tool calling, агентный цикл, ограничители, роутинг | агент на 50 строк, подтверждение человека, роутинг моделей |
-| 11 | RAG с нуля | эмбеддинги, pgvector, полнотекстовый и гибридный поиск | поиск по смыслу, ответ со ссылками, гибридный поиск |
-| 12 | LangGraph, MCP, evals | графы агентов, MCP-сервер, Agent Skills, evals | агент на LangGraph, evals, свой MCP-сервер, свой Skill |
-| 13 | Итоговый проект | «Раскадровщик»: бриф → раскадровка для AI-видео | MVP, агент и RAG, цифры и подача |
+| [logwatch](https://github.com/OralbekovAbzal/logwatch) | CLI that reads API access logs from stdin, computes error rate and p50/p95 per endpoint, checks SLO thresholds and reports the result via exit code | Python, GitHub Actions | 🟡 level 1 · tests in progress |
+| [bank_assistant](https://github.com/OralbekovAbzal/bank_assistant) | Chat assistant for bank clients: answers questions about balances, transactions and spending from real data via Gemini function calling, with an agent loop capped at 5 steps. `user_id` always comes from the JWT, never from the model | FastAPI, PostgreSQL, Gemini API, JWT, Docker Compose | 🟡 level 1 |
+| [ai_prep](https://github.com/OralbekovAbzal/ai_prep) | My practice repo: solutions to a 14-module plan from Python basics to LLM agents and RAG | Python, SQL, Docker | 🟢 updated daily |
 
-Модули 00–10 и итоговый проект — до старта курса, это около шести недель. Модули 11–12 — параллельно с первыми месяцами курса.
+### `> POWER-UPS` · stack
 
-## Отдельные проекты
+`Python` · `FastAPI` · `PostgreSQL` · `Docker` · `Git` · `GitHub Actions` · `pytest`
 
-Проекты крупнее одной задачи живут в своих репозиториях:
+### `> NEXT LEVEL` · learning now
 
-- [logwatch](https://github.com/OralbekovAbzal/logwatch) — CLI-утилита: читает access-логи API из stdin, считает error rate и p50/p95 по эндпоинтам, проверяет SLO и сообщает результат кодом выхода. Сделана по спецификации, с CI на GitHub Actions.
-- [python-project-template](https://github.com/OralbekovAbzal/python-project-template) — мой шаблон Python-проекта (venv, .env, структура модулей). От него создаются новые проекты.
+<!-- NEXT:START -->
+Now on module 07 · Docker and deploy: Dockerfile, compose, first service on Render
+<!-- NEXT:END -->
 
-## Как запустить задачу
+### `> GAME LOG` · contributions
 
-```bash
-git clone https://github.com/OralbekovAbzal/ai-prep.git
-cd ai-prep/<папка задачи>
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt   # если файл есть в папке
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OralbekovAbzal/OralbekovAbzal/output/pacman-contribution-graph-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/OralbekovAbzal/OralbekovAbzal/output/pacman-contribution-graph.svg">
+    <img alt="Pac-Man eating my contribution graph" src="https://raw.githubusercontent.com/OralbekovAbzal/OralbekovAbzal/output/pacman-contribution-graph.svg">
+  </picture>
+</p>
 
-Дальше — по README внутри папки, если он есть. Большинство задач на стандартной библиотеке и запускаются одним файлом.
