@@ -42,3 +42,7 @@ def get_job(user_id: int):
         "balance": res[2]
     }
     return wallet
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
