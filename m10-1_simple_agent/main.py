@@ -4,12 +4,18 @@ import os
 import psycopg
 import sys
 import json
-
+import time
 
 load_dotenv()
 
 class ToolError(Exception):
     pass
+
+def save_logs(model: str, prompt: str, input_tokens: int, output_tokens: int, response_time_ms: int, response_text: str, error_text: str):
+    with psycopg.connect(os.getenv("DATABASE_URL_2")) as conn:
+        with conn.cursor() as cur:
+            query = "insert into llm_calls (model, input_text, input_tokens, output_tokens, response_time_ms, response_text, error_text) values (%s, %s, %s, %s, %s, %s, %s)"
+            cur.execute(query, (model, prompt, input_tokens, output_tokens, response_time_ms, response_text, error_text))
 
 def price_credits(user_id: int, model: str, seconds: int) -> int:
     if model == "pro":
@@ -25,7 +31,7 @@ def price_credits(user_id: int, model: str, seconds: int) -> int:
     raise ToolError(f"Invalid model: {model}. Correct models are fast and pro.")
 
 def search_prompts(user_id: int, query: str) -> tuple:
-    with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+    with psycopg.connect(os.getenv("DATABASE_URL_1")) as conn:
         with conn.cursor() as cur:
             cur.execute("select prompt, model, status, cost, created_at from jobs where prompt like %s and user_id = %s;",("%" + query + "%", user_id))
             rows = cur.fetchall()
@@ -41,7 +47,7 @@ def search_prompts(user_id: int, query: str) -> tuple:
             return data
 
 def check_balance(user_id: int) -> int:
-    with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+    with psycopg.connect(os.getenv("DATABASE_URL_1")) as conn:
         with conn.cursor() as cur:
             cur.execute("select balance from wallets where user_id = %s",(user_id,))
             row = cur.fetchone()
@@ -68,7 +74,7 @@ def start_generation(user_id: int, prompt: str, model: str, seconds: int) -> dic
     if seconds <= 0:
         raise ToolError(f"Длительность видео не может быть отрицательным: {seconds}")
     
-    with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+    with psycopg.connect(os.getenv("DATABASE_URL_1")) as conn:
         with conn.cursor() as cur:
             data = price_credits(user_id, model, seconds)
             cost = data["cost"]
@@ -108,6 +114,19 @@ def start_generation(user_id: int, prompt: str, model: str, seconds: int) -> dic
             query = "update wallets set balance = balance - %s where user_id = %s"
             cur.execute(query,(cost, user_id))
             return {"result": "success"}
+
+def classification(prompt: str) -> bool:
+    key_words = {"почему", "план", "раскадровка", "объясни", "причина", "хватет ли"}
+
+    symbols = (",", ":", ".", "'", '"', "?")
+    for s in symbols:
+        prompt = prompt.replace(s, "")
+    words = set(prompt.lower().split())
+
+    common = words & key_words
+    if common:
+        return True
+    return False
 
 price_credits_tool = {
     "type": "function",
@@ -209,14 +228,31 @@ tools = {
 tool_list = [price_credits_tool, search_prompts_tool, check_balance_tool, start_generation_tool]
 
 def agent(user_id: int, prompt: str) -> str:
+    total_input_tokens = 0
+    total_output_tokens = 0
+    total_time_ms = 0
+    initial_prompt = prompt
+
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+    model = "gemini-3.6-flash" if classification(prompt) else "gemini-3.5-flash-lite"
+
     prev_id = None
+
+    start = time.perf_counter()
+
     interaction = client.interactions.create(
-            model="gemini-3.5-flash",
+            model=model,
             input=prompt,
             tools=tool_list,
             previous_interaction_id=prev_id
         )
+    
+    total_time_ms += (time.perf_counter() - start) * 1000
+    total_input_tokens += interaction.usage.total_input_tokens
+    total_output_tokens += interaction.usage.total_output_tokens
+    errors = ""
+
     for _ in range(5):
         prompt = ""
         data = list()
@@ -247,17 +283,49 @@ def agent(user_id: int, prompt: str) -> str:
                         "call_id": step.id,
                         "result": [{"type":"text", "text":f"Ошибка при вызове функции: {step.name}. Ошибка: {e}"}]
                     })
-                    sys.stderr.write(f"Ошибка при вызове функции: {step.name}. Ошибка: {e}\n")
+                    err = f"Ошибка при вызове функции: {step.name}. Ошибка: {e}\n"
+                    errors += err
+                    sys.stderr.write(err)
 
         if data:
+            start = time.perf_counter()
             interaction = client.interactions.create(
-                model="gemini-3.5-flash",
+                model=model,
                 input=data,
                 tools=tool_list,
                 previous_interaction_id=prev_id
             )
+            total_time_ms += (time.perf_counter() - start) * 1000
+            total_input_tokens += interaction.usage.total_input_tokens
+            total_output_tokens += interaction.usage.total_output_tokens
         else:
+            save_logs(model, initial_prompt, total_input_tokens, total_output_tokens, total_time_ms, interaction.output_text, errors)
             return interaction.output_text
+    save_logs(model, initial_prompt, total_input_tokens, total_output_tokens, total_time_ms, "", errors + "Превышено количество запросов")
     return "Превышено количество запросов"
 
-print(agent(2, "запусти генерацию видео на 15 сек с промтом 'Ночные улицы Астаны'. Используй модель pro"))
+TEST_PROMPTS = [
+    "Какой у меня баланс?",
+    "Сколько стоит 10 секунд на fast?",
+    "Сколько стоит ролик на 20 секунд на pro?",
+    "Привет! Что ты умеешь?",
+    "Покажи мои ролики про горы",
+    "Я делал что-нибудь про кофейню?",
+    "Хватит ли мне на один ролик 5 секунд на fast?",
+    "Какие модели у вас есть?",
+    "Сколько кредитов у меня осталось",
+    "Найди мои видео с неоновым городом",
+    "Сравни, что выгоднее для меня: три ролика по 10 секунд на fast или один на pro?",
+    "Почему pro дороже fast и когда он того стоит?",
+    "Объясните, на что у меня ушло больше всего кредитов",
+    "Составь план: хочу 5 роликов для рекламы кешбэка, уложись в мой баланс",
+    "Сделай раскадровку для ролика про ночную Астану на 20 секунд",
+    "Хватит ли мне кредитов на 3 ролика по 10 секунд на pro? Если нет, предложи вариант подешевле",
+    "Посмотри мои прошлые ролики про горы и посоветуй, на какой модели делать следующий",
+    "Какие из моих роликов провалились и что у них общего?",
+    "У меня 200 кредитов. Распредели их на рекламную кампанию из нескольких роликов",
+    "Почему?",
+]
+
+for p in TEST_PROMPTS:
+    agent(2, p)
